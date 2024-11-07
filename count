@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dzikir Counter</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      margin-top: 20px;
+      background-color: #f4f4f9;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .progress-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--progress-color, #4caf50) var(--progress, 0%),
+        #ddd var(--progress, 0%)
+      );
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--progress-color, #4caf50);
+      margin: 20px auto;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      position: relative;
+      transition: background 0.3s ease;
+    }
+
+    .progress-circle::before {
+      content: "";
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      background-color: #f4f4f9;
+      border-radius: 50%;
+    }
+
+    .progress-circle span {
+      position: relative;
+      color: var(--progress-color, #4caf50);
+    }
+
+    .buttons, .color-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #4caf50;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .button:hover {
+      background-color: #45a049;
+    }
+
+    .button.red {
+      background-color: #f44336;
+    }
+
+    .limit-button, .color-button {
+      padding: 5px 15px;
+      margin: 5px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .color-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+    }
+
+    .color-button.green { background-color: #4caf50; }
+    .color-button.orange { background-color: #ff9800; }
+    .color-button.blue { background-color: #2196f3; }
+    .color-button.purple { background-color: #9c27b0; }
+
+    /* Checklist animation */
+    .checklist {
+      font-size: 24px;
+      color: green;
+      display: none;
+      animation: showChecklist 1s ease-in-out forwards;
+    }
+
+    @keyframes showChecklist {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .completed {
+      animation: glowAnimation 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes glowAnimation {
+      0% {
+        box-shadow: 0 0 10px #ff9800, 0 0 20px #ff9800;
+      }
+      100% {
+        box-shadow: 0 0 30px #ff9800, 0 0 50px #ff9800;
+      }
+    }
+
+    .history {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .history h2 {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .history ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .history li {
+      margin: 5px 0;
+      font-size: 16px;
+    }
+
+    #chart-container {
+      width: 100%;
+      height: 500px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Dzikir Counter</h1>
+  <div class="progress-circle" id="progress-circle">
+    <span id="progress-text">0%</span>
+  </div>
+  <p id="dzikir-count">Dzikir: 0 / 33</p>
+  <div id="checklist" class="checklist">✔️</div>
+  <div class="buttons">
+    <button class="button" onclick="incrementDzikir()">Tambah Dzikir</button>
+    <button class="button red" onclick="resetDzikir()">Reset</button>
+    <button class="button" onclick="resetHistory()">Reset Riwayat</button>
+  </div>
+  <div class="limits">
+    <p>Pilih Batas Dzikir:</p>
+    <button class="limit-button" onclick="setDzikirLimit(33)">33</button>
+    <button class="limit-button" onclick="setDzikirLimit(100)">100</button>
+    <button class="limit-button" onclick="setDzikirLimit(1000)">1000</button>
+  </div>
+  <div class="color-buttons">
+    <p>Pilih Warna Progress:</p>
+    <button class="color-button green" onclick="setProgressColor('#4caf50')"></button>
+    <button class="color-button orange" onclick="setProgressColor('#ff9800')"></button>
+    <button class="color-button blue" onclick="setProgressColor('#2196f3')"></button>
+    <button class="color-button purple" onclick="setProgressColor('#9c27b0')"></button>
+  </div>
+
+  <div class="history">
+    <h2>Riwayat Dzikir</h2>
+    <ul id="history-list">
+      <!-- Riwayat dzikir akan muncul di sini -->
+    </ul>
+  </div>
+
+  <div id="chart-container">
+    <canvas id="dzikirChart"></canvas>
+  </div>
+</div>
+
+<script>
+  let dzikirCount = 0;
+  let dzikirLimit = 33;
+  let dzikirHistory = [];
+
+  // Get data from localStorage if it exists
+  if (localStorage.getItem('dzikirCount')) {
+    dzikirCount = parseInt(localStorage.getItem('dzikirCount'));
+  }
+
+  if (localStorage.getItem('dzikirHistory')) {
+    dzikirHistory = JSON.parse(localStorage.getItem('dzikirHistory'));
+  }
+
+  // Initialize the Chart.js chart
+  const ctx = document.getElementById('dzikirChart').getContext('2d');
+  const dzikirChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [], // Days
+      datasets: [{
+        label: 'Jumlah Dzikir',
+        data: [], // Dzikir count per day
+        borderColor: '#4caf50',
+        borderWidth: 2,
+        fill: false,
+      }],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Hari'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Jumlah Dzikir'
+          }
+        }
+      }
+    }
+  });
+
+  function updateProgress() {
+    const progress = (dzikirCount / dzikirLimit) * 100;
+    document.getElementById('progress-circle').style.setProperty('--progress', `${progress}%`);
+    document.getElementById('progress-text').textContent = `${Math.round(progress)}%`;
+    document.getElementById('dzikir-count').textContent = `Dzikir: ${dzikirCount} / ${dzikirLimit}`;
+
+    // Trigger animation when dzikir reaches the limit
+    if (dzikirCount >= dzikirLimit) {
+      document.getElementById('progress-circle').classList.add('completed');
+      document.getElementById('checklist').style.display = "inline-block"; // Show checklist animation
+      saveHistory(); // Save dzikir history when completed
+    } else {
+      document.getElementById('progress-circle').classList.remove('completed');
+      document.getElementById('checklist').style.display = "none"; // Hide checklist when dzikir count is not reached
+    }
+  }
+
+  function incrementDzikir() {
+    if (dzikirCount < dzikirLimit) {
+      dzikirCount++;
+      updateProgress();
+
+      // Add dzikir count to history
+      const today = new Date().toLocaleDateString();
+      dzikirHistory.push({ date: today, count: dzikirCount });
+
+      // Save to localStorage
+      localStorage.setItem('dzikirCount', dzikirCount);
+      localStorage.setItem('dzikirHistory', JSON.stringify(dzikirHistory));
+
+      updateChart();
+    }
+  }
+
+  function resetDzikir() {
+    dzikirCount = 0;
+    updateProgress();
+
+    // Clear checklist
+    document.getElementById('checklist').style.display = "none";
+
+    // Clear history from localStorage
+    dzikirHistory = [];
+    localStorage.removeItem('dzikirHistory');
+
+    // Update the chart
+    updateChart();
+  }
+
+  function setDzikirLimit(limit) {
+    dzikirLimit = limit;
+    dzikirCount = 0;
+    updateProgress();
+
+    // Clear checklist
+    document.getElementById('checklist').style.display = "none";
+
+    // Update the chart
+    updateChart();
+  }
+
+  function setProgressColor(color) {
+    document.getElementById('progress-circle').style.setProperty('--progress-color', color);
+  }
+
+  function saveHistory() {
+    localStorage.setItem('dzikirHistory', JSON.stringify(dzikirHistory));
+    displayHistory();
+  }
+  function resetHistory() {
+    // Clear history from localStorage
+    localStorage.removeItem('dzikirHistory');
+    dzikirHistory = []; 
+  }
+
+  function displayHistory() {
+    const history = JSON.parse(localStorage.getItem('dzikirHistory')) || [];
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = ''; // Clear existing history
+    history.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `Dzikir ${item.count} pada ${item.date}`;
+      historyList.appendChild(li);
+    });
+  }
+
+  function updateChart() {
+    const labels = dzikirHistory.map(entry => entry.date);
+    const data = dzikirHistory.map(entry => entry.count);
+
+    dzikirChart.data.labels = labels;
+    dzikirChart.data.datasets[0].data = data;
+    dzikirChart.update();
+  }
+
+  // Initial update
+  updateProgress();
+  updateChart();
+</script>
+
+</body>
+</html>
